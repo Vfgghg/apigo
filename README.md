@@ -1,35 +1,27 @@
 using System;
-using System.Net.Http;
-using System.Text.Json;
-using System.Threading.Tasks;
+using System.IO;
+using System.Security.Cryptography;
 using System.Text;
 
-public class Program
+public static class EncryptionHelper
 {
-    public static async Task Main(string[] args)
+    // Encrypts the provided data using RSA encryption
+    public static byte[] EncryptData(byte[] data, RSAParameters publicKey)
     {
-        MainRequestDataField requestData = CreateRequestData();
-        byte[] encryptedData = EncryptionHelper.EncryptRequestData(requestData);
-        byte[] signature = SignatureHelper.SignData(encryptedData);
-        HttpResponseMessage response = await ApiHelper.SendRequestToApi(encryptedData, signature);
-        await ProcessResponse(response);
-    }
-
-    private static MainRequestDataField CreateRequestData()
-    {
-        return new MainRequestDataField
+        using (RSA rsa = RSA.Create())
         {
-            RequestedID = "123456",
-            SourceSystemName = SourceSystemNameEnum.System1,
-            APItoken = "your_api_token",
-            Purpose = PurposeEnum.Purpose1,
-            SessionKey = "session_key"
-        };
+            rsa.ImportParameters(publicKey);
+            return rsa.Encrypt(data, RSAEncryptionPadding.OaepSHA256);
+        }
     }
 
-    private static async Task ProcessResponse(HttpResponseMessage response)
+    // Decrypts the provided data using RSA decryption
+    public static byte[] DecryptData(byte[] encryptedData, RSAParameters privateKey)
     {
-        // Implement response processing logic here
-        byte[] encryptedResponseData = await response.Content.ReadAsByteArrayAsync(); // Placeholder
+        using (RSA rsa = RSA.Create())
+        {
+            rsa.ImportParameters(privateKey);
+            return rsa.Decrypt(encryptedData, RSAEncryptionPadding.OaepSHA256);
+        }
     }
 }
